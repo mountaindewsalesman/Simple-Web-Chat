@@ -305,8 +305,8 @@ async function addMessage(){
 
     const messageRef = child(msgDB,  curUserChat+"/messages")
     const newMessageRef = push(messageRef);
-    await set(newMessageRef, new Message("text", msgInput.value, curUserName));
     msgInput.value = ""
+    await set(newMessageRef, new Message("text", msgInput.value, curUserName));
     updateTextArea();
     messagesList.scrollTop = messagesList.scrollHeight;
   }
