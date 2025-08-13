@@ -228,7 +228,8 @@ async function updateSelectDropdown(){
 selectChat.addEventListener("change", () => {
   curUserChat = selectChat.value; 
   curUserChatName = selectChat.options[selectChat.selectedIndex].text;
-  updateTextArea()
+  updateTextArea();
+  messagesList.scrollTop = messagesList.scrollHeight;
 })
 
 const createChatButton = document.getElementById("createChat");
@@ -307,6 +308,7 @@ async function addMessage(){
     await set(newMessageRef, new Message("text", msgInput.value, curUserName));
     msgInput.value = ""
     updateTextArea();
+    messagesList.scrollTop = messagesList.scrollHeight;
   }
 }
 
