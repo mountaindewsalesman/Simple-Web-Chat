@@ -90,7 +90,6 @@ let emailjsOptions = {
 emailjs.init(emailjsOptions);
 
 
-
 //sign up code
 const signUp = document.getElementById("signUp");
 signUp.addEventListener('click', addAccount)
@@ -201,6 +200,7 @@ async function updateSelectDropdown(){
   while (selectChat.options.length > 1) {
     selectChat.remove(1); // always remove the second option until only one left
   }
+
   const msgSnapshot = await get(msgDB);
   const userSnapshot = await get(userDB);
   let allUsers = userSnapshot.val();
@@ -221,10 +221,13 @@ async function updateSelectDropdown(){
       }
       
       selectChat.add(new Option(names.join(", "), chats[i].key)); 
-      console.log(names)
     }
   }
 }
+
+let messagesList = document.getElementById("messagesList");
+let chatHeader = document.getElementById("chatHeader");
+
 selectChat.addEventListener("change", () => {
   curUserChat = selectChat.value; 
   curUserChatName = selectChat.options[selectChat.selectedIndex].text;
@@ -269,8 +272,7 @@ async function createChat(){
 }
 
 //chatting code
-let messagesList = document.getElementById("messagesList");
-let chatHeader = document.getElementById("chatHeader");
+
 async function updateTextArea(){
   if(curUserChat == null){
     messagesList.value = "";
