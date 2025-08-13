@@ -7,6 +7,7 @@ import {
       child,
       set,
       push, 
+      onValue,
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 
@@ -228,12 +229,18 @@ async function updateSelectDropdown(){
 let messagesList = document.getElementById("messagesList");
 let chatHeader = document.getElementById("chatHeader");
 
-selectChat.addEventListener("change", () => {
+selectChat.addEventListener("change", changeCurUserChat)
+
+async function changeCurUserChat(){
   curUserChat = selectChat.value; 
   curUserChatName = selectChat.options[selectChat.selectedIndex].text;
-  updateTextArea();
+  console.log("changed to " + curUserChat)
+  await updateTextArea();
+  autoUpdateText(); //set the path to be correct
+  
   messagesList.scrollTop = messagesList.scrollHeight;
-})
+  console.log("done")
+}
 
 const createChatButton = document.getElementById("createChat");
 createChatButton.addEventListener('click', createChat)
@@ -279,9 +286,11 @@ async function updateTextArea(){
     chatHeader.textContent = "<- Select a chat to start"
   }else{
     let outputString = ""
-    const msgSnapshot = await get(msgDB);
-    let curList = msgSnapshot.child(curUserChat).val();
-    Object.values(curList.messages).forEach(msg => {
+
+    const chatRef = await get(child(msgDB,  curUserChat));
+    let chatVals = chatRef.val();
+
+    Object.values(chatVals.messages).forEach(msg => {
       outputString += msg.author + ": " + msg.content + "\n";
     });
 
@@ -289,7 +298,18 @@ async function updateTextArea(){
     chatHeader.textContent = curUserChatName;
   }
 }
-setInterval(updateTextArea, 300);
+
+function autoUpdateText() {
+  const messagesRef = child(msgDB,  curUserChat+"/messages")
+  console.log("updated messagesRef")
+
+  onValue(messagesRef, (snapshot) => {
+    console.log("change detected");
+    updateTextArea();
+  });
+}
+
+//setInterval(updateTextArea, 300);
 
 
 let sendMessage = document.getElementById("sendMessage");
@@ -310,7 +330,7 @@ async function addMessage(){
     let sentMsg = msgInput.value;
     msgInput.value = ""
     await set(newMessageRef, new Message("text", sentMsg, curUserName));
-    updateTextArea();
+    //updateTextArea();
     messagesList.scrollTop = messagesList.scrollHeight;
   }
 }
@@ -339,8 +359,8 @@ async function pruneOldMessages() {
       const pruned = messages.slice(messages.length - limit);
 
       // Write back pruned messages
-      const chatRef = child(msgDB,  curUserChat+"/messages")
-      await set(chatRef, pruned);
+      const messagesRef = child(msgDB,  curUserChat+"/messages")
+      await set(messagesRef, pruned);
     }
   }
 
