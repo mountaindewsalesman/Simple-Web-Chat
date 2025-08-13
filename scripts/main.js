@@ -287,7 +287,7 @@ async function updateTextArea(){
     chatHeader.textContent = curUserChatName;
   }
 }
-setInterval(updateTextArea, 1000);
+setInterval(updateTextArea, 500);
 
 
 let sendMessage = document.getElementById("sendMessage");
@@ -305,8 +305,9 @@ async function addMessage(){
 
     const messageRef = child(msgDB,  curUserChat+"/messages")
     const newMessageRef = push(messageRef);
+    let sentMsg = msgInput.value;
     msgInput.value = ""
-    await set(newMessageRef, new Message("text", msgInput.value, curUserName));
+    await set(newMessageRef, new Message("text", sentMsg, curUserName));
     updateTextArea();
     messagesList.scrollTop = messagesList.scrollHeight;
   }
