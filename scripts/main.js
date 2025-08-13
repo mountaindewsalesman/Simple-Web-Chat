@@ -261,7 +261,7 @@ async function createChat(){
     return;
   }
 
-  let newChat = new Chat(emailList, 10) //1 week or 200 messages
+  let newChat = new Chat(emailList, 200) //1 week or 200 messages
   await set(child(msgDB, chatKey), newChat);
   listInput.value = curUserEmail
   alert("Chat has been created!")
