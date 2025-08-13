@@ -276,6 +276,7 @@ async function updateTextArea(){
     chatHeader.textContent = "<- Select a chat to start"
   }else{
     let outputString = ""
+    const msgSnapshot = await get(msgDB);
     let curList = msgSnapshot.child(curUserChat).val();
     Object.values(curList.messages).forEach(msg => {
       outputString += msg.author + ": " + msg.content + "\n";
@@ -300,7 +301,6 @@ msgInput.addEventListener('keydown', function(event) {
 
 async function addMessage(){
   if(msgInput.value != "" && curUserChat != null){
-    let curList = msgSnapshot.child(curUserChat).val();
 
     const messageRef = child(msgDB,  curUserChat+"/messages")
     const newMessageRef = push(messageRef);
