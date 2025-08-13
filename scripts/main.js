@@ -276,7 +276,6 @@ async function updateTextArea(){
     chatHeader.textContent = "<- Select a chat to start"
   }else{
     let outputString = ""
-    const msgSnapshot = await get(msgDB);
     let curList = msgSnapshot.child(curUserChat).val();
     Object.values(curList.messages).forEach(msg => {
       outputString += msg.author + ": " + msg.content + "\n";
