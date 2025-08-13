@@ -198,32 +198,45 @@ const selectChat = document.getElementById("selectChat");
 selectChat.addEventListener('focus', updateSelectDropdown);
 
 async function updateSelectDropdown(){
-  while (selectChat.options.length > 1) {
-    selectChat.remove(1); // always remove the second option until only one left
-  }
+  const overlay = document.getElementById('loading-overlay');
 
-  const msgSnapshot = await get(msgDB);
-  const userSnapshot = await get(userDB);
-  let allUsers = userSnapshot.val();
+  try{
+    overlay.style.display = 'flex';
 
-  const chats = [];
-  msgSnapshot.forEach(childSnap => {
-    chats.push ({
-      key: childSnap.key, 
-      data: childSnap.val()
-    })
-  })
-  for(let i = 0; i < chats.length; i++){
-    let members = chats[i].data.members;
-    if (members.includes(curUserEmail)){
-      let names = []
-      for(let j = 0; j < members.length; j++){
-        names.push(allUsers[sanitizeKey(members[j])]["name"]);
-      }
-      
-      selectChat.add(new Option(names.join(", "), chats[i].key)); 
+
+    while (selectChat.options.length > 1) {
+      selectChat.remove(1); // always remove the second option until only one left
     }
+
+    const msgSnapshot = await get(msgDB);
+    const userSnapshot = await get(userDB);
+    let allUsers = userSnapshot.val();
+
+    const chats = [];
+    msgSnapshot.forEach(childSnap => {
+      chats.push ({
+        key: childSnap.key, 
+        data: childSnap.val()
+      })
+    })
+    for(let i = 0; i < chats.length; i++){
+      let members = chats[i].data.members;
+      if (members.includes(curUserEmail)){
+        let names = []
+        for(let j = 0; j < members.length; j++){
+          names.push(allUsers[sanitizeKey(members[j])]["name"]);
+        }
+        
+        selectChat.add(new Option(names.join(", "), chats[i].key)); 
+      }
+    }
+  }finally{
+    overlay.style.display = 'none';
   }
+
+
+  
+
 }
 
 let messagesList = document.getElementById("messagesList");
@@ -235,8 +248,15 @@ async function changeCurUserChat(){
   curUserChat = selectChat.value; 
   curUserChatName = selectChat.options[selectChat.selectedIndex].text;
   console.log("changed to " + curUserChat)
-  await updateTextArea();
-  autoUpdateText(); //set the path to be correct
+  const overlay = document.getElementById('loading-overlay');
+  try{
+    overlay.style.display = 'flex';
+    await updateTextArea();
+    autoUpdateText(); //set the path to be correct
+  }finally{
+    overlay.style.display = 'none';
+  }
+  
   
   messagesList.scrollTop = messagesList.scrollHeight;
   console.log("done")
@@ -272,7 +292,7 @@ async function createChat(){
     return;
   }
 
-  let newChat = new Chat(emailList, 80) //1 week or 200 messages
+  let newChat = new Chat(emailList, 150) //1 week or 200 messages
   await set(child(msgDB, chatKey), newChat);
   listInput.value = curUserEmail
   alert("Chat has been created!")
@@ -309,7 +329,6 @@ function autoUpdateText() {
   });
 }
 
-//setInterval(updateTextArea, 300);
 
 
 let sendMessage = document.getElementById("sendMessage");
@@ -330,15 +349,14 @@ async function addMessage(){
     let sentMsg = msgInput.value;
     msgInput.value = ""
     await set(newMessageRef, new Message("text", sentMsg, curUserName));
-    //updateTextArea();
     messagesList.scrollTop = messagesList.scrollHeight;
   }
 }
 
 async function pruneOldMessages() {
   if(curUserChat != null){
-    const msgSnapshot = await get(msgDB);
-    let curList = msgSnapshot.child(curUserChat).val();
+    const chatSnapshot = await get(child(msgDB, curUserChat));
+    let curList = chatSnapshot.val();
 
     const limit = curList.messageLimit
     let messagesObj = curList.messages;
