@@ -278,7 +278,6 @@ async function updateTextArea(){
     let outputString = ""
     const msgSnapshot = await get(msgDB);
     let curList = msgSnapshot.child(curUserChat).val();
-    if(curList.members.includes(curUserEmail)){return;};
     Object.values(curList.messages).forEach(msg => {
       outputString += msg.author + ": " + msg.content + "\n";
     });
@@ -303,7 +302,6 @@ msgInput.addEventListener('keydown', function(event) {
 async function addMessage(){
   if(msgInput.value != "" && curUserChat != null){
     let curList = msgSnapshot.child(curUserChat).val();
-    if(curList.members.includes(curUserEmail)){return;};
 
     const messageRef = child(msgDB,  curUserChat+"/messages")
     const newMessageRef = push(messageRef);
