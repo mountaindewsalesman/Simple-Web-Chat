@@ -32,6 +32,7 @@ let curUserPass = null
 let curUserEmail = null
 let curUserChat = null
 let curUserChatName = null
+let numNotifs = 0
 
 class User {
   constructor(name, email, pass) {
@@ -298,7 +299,7 @@ async function createChat(){
   alert("Chat has been created!")
 }
 
-//chatting code
+//messages code
 
 async function updateTextArea(){
   if(curUserChat == null){
@@ -326,8 +327,17 @@ function autoUpdateText() {
   onValue(messagesRef, (snapshot) => {
     console.log("change detected");
     updateTextArea();
+    if (document.hidden){numNotifs++;};
+    setFaviconBadge(numNotifs)
   });
+
 }
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    numNotifs = 0;
+    setFaviconBadge(numNotifs)
+  } 
+});
 
 
 
