@@ -7,7 +7,7 @@ import {
       child,
       set,
       push, 
-      onValue,
+      onChildAdded,
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 
@@ -99,6 +99,7 @@ signUp.addEventListener('click', addAccount)
 async function addAccount(){
   let userName = prompt("Enter Name Here: (please enter your real name):");
   let userEmail = prompt("Enter Email Here:");
+  userEmail = userEmail.toLowerCase();
   if(!userEmail.includes("@")){
     alert("Please enter a valid email adress!")
     return;
@@ -132,6 +133,7 @@ logIn.addEventListener('click', signIn)
 
 async function signIn(){
   let userEmail = prompt("Enter Email Here:");
+  userEmail = userEmail.toLowerCase();
   if(!userEmail.includes("@")){
     alert("Please enter a valid email adress!")
     return;
@@ -143,15 +145,16 @@ async function signIn(){
   if(await userExists(userEmail)){
     const snapshot = await get(child(userDB, sanitizeKey(userEmail)));
     let userData = snapshot.val();
-
     let hashedPass = sha256(userPass);
     if(hashedPass == userData.hashedPass){
       curUserName = userData.name;
       curUserPass = userPass;
       curUserEmail = userEmail;
+      
       loggedIn = true;
       alert("Logged in!");
       refreshLoginView()
+      updateSelectDropdown()
     }else{
       alert("Incorrect passcode.");
     }
@@ -163,6 +166,7 @@ async function signIn(){
 
 
 function refreshLoginView(){
+  //loggedIn = true;
     document.getElementById('logged-in').style.display = loggedIn ? 'block' : 'none';
     document.getElementById('logged-in1').style.display = loggedIn ? 'block' : 'none';
     document.getElementById('logged-in2').style.display = loggedIn ? 'block' : 'none';
@@ -196,7 +200,11 @@ class Chat{
 }
 
 const selectChat = document.getElementById("selectChat");
-selectChat.addEventListener('focus', updateSelectDropdown);
+
+let refreshChatList = document.getElementById("refreshChatList");
+refreshChatList.addEventListener('click', updateSelectDropdown);
+
+//make this a button called refresh. 
 
 async function updateSelectDropdown(){
   const overlay = document.getElementById('loading-overlay');
@@ -220,8 +228,12 @@ async function updateSelectDropdown(){
         data: childSnap.val()
       })
     })
+    
     for(let i = 0; i < chats.length; i++){
       let members = chats[i].data.members;
+      console.log(members)
+      console.log(members.includes(curUserEmail))
+      console.log(curUserEmail)
       if (members.includes(curUserEmail)){
         let names = []
         for(let j = 0; j < members.length; j++){
@@ -246,21 +258,38 @@ let chatHeader = document.getElementById("chatHeader");
 selectChat.addEventListener("change", changeCurUserChat)
 
 async function changeCurUserChat(){
-  curUserChat = selectChat.value; 
-  curUserChatName = selectChat.options[selectChat.selectedIndex].text;
-  console.log("changed to " + curUserChat)
-  const overlay = document.getElementById('loading-overlay');
+  const overlay = document.getElementById('loading-overlay');  
+
   try{
+    
     overlay.style.display = 'flex';
+
+    //before leave, send message that am leaving
+    
+    if(curUserChat != null){
+      const messageRef = child(msgDB,  curUserChat+"/messages")
+      const newMessageRef = push(messageRef);
+      await set(newMessageRef, new Message("text", curUserName + " has left the chat.", "Client"));
+    }
+
+    //change chat
+    curUserChat = selectChat.value; 
+    curUserChatName = selectChat.options[selectChat.selectedIndex].text;
+    
     await updateTextArea();
-    autoUpdateText(); //set the path to be correct
+    autoUpdateText(); //set the path for event listener to be correct
+
+    //send new message saying you entered
+    const messageRef = child(msgDB,  curUserChat+"/messages")
+    const newMessageRef = push(messageRef);
+    await set(newMessageRef, new Message("text", curUserName + " has joined the chat.", "Client"));
+
   }finally{
     overlay.style.display = 'none';
   }
   
   
   messagesList.scrollTop = messagesList.scrollHeight;
-  console.log("done")
 }
 
 const createChatButton = document.getElementById("createChat");
@@ -270,6 +299,10 @@ async function createChat(){
   const listInput = document.getElementById('listInput').value;
   const emailList = listInput.split('\n').map(item => item.trim()).filter(Boolean);
   
+  for(let i = 0; i < emailList.length; i++){
+    emailList[i] = emailList[i].toLowerCase();
+  }
+
   if(!emailList.includes(curUserEmail)){
     alert("Chat must contain your own email! You cannot creat a chat you aren't in!");
     return;
@@ -294,12 +327,15 @@ async function createChat(){
   }
 
   let newChat = new Chat(emailList, 150) //1 week or 200 messages
-  await set(child(msgDB, chatKey), newChat);
-  listInput.value = curUserEmail
   alert("Chat has been created!")
+  await set(child(msgDB, chatKey), newChat);
+  document.getElementById('listInput').value = curUserEmail;
 }
 
 //messages code
+
+let scrollDown = document.getElementById("scrollDown");
+scrollDown.checked = true;
 
 async function updateTextArea(){
   if(curUserChat == null){
@@ -312,7 +348,9 @@ async function updateTextArea(){
     let chatVals = chatRef.val();
 
     Object.values(chatVals.messages).forEach(msg => {
-      outputString += msg.author + ": " + msg.content + "\n";
+      if(msg.type == "text"){
+        outputString += msg.author + ": " + msg.content + "\n";
+      }
     });
 
     messagesList.value = outputString;
@@ -322,10 +360,10 @@ async function updateTextArea(){
 
 function autoUpdateText() {
   const messagesRef = child(msgDB,  curUserChat+"/messages")
-  console.log("updated messagesRef")
 
-  onValue(messagesRef, (snapshot) => {
-    console.log("change detected");
+  onChildAdded(messagesRef, (snapshot) => {
+    if(scrollDown.checked){messagesList.scrollTop = messagesList.scrollHeight;};
+
     updateTextArea();
     if (document.hidden){numNotifs++;};
     setFaviconBadge(numNotifs)
@@ -353,13 +391,16 @@ msgInput.addEventListener('keydown', function(event) {
 
 async function addMessage(){
   if(msgInput.value != "" && curUserChat != null){
-
+    let sentMsg = msgInput.value;
+    if(sentMsg.length > 500){
+      alert("You have exceeded the 500 character message limit. Please Shorten.");
+      return;
+    }
     const messageRef = child(msgDB,  curUserChat+"/messages")
     const newMessageRef = push(messageRef);
-    let sentMsg = msgInput.value;
     msgInput.value = ""
     await set(newMessageRef, new Message("text", sentMsg, curUserName));
-    messagesList.scrollTop = messagesList.scrollHeight;
+    if(scrollDown.checked){messagesList.scrollTop = messagesList.scrollHeight;};
   }
 }
 

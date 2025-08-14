@@ -56,10 +56,13 @@
             
                 <h2>Manage Chats</h2>
                 <div id = "logged-in1">
-                    <b>Select a chat to open: (wait a second for them to load) </b> <br>
+                    <b>Select a chat to open: </b> <br>
                     <select name="Select Chat" id="selectChat" style="width: 100%; max-width: 100%">
+                
                     <option value="" disabled selected>-- Select a chat to begin --</option>
                     </select>
+                    <br>
+                    <button id = "refreshChatList">Refresh</button>
 
                     <br><br>
                     <b>Or create a new chat:</b>
@@ -84,6 +87,9 @@
                     <br>
                     <input type="text" id="msgInput" placeholder = "Enter message here...", style = "width: calc(100% - 60px)"></input>
                     <button id = "sendMessage">Send</button>
+                    <br>
+                    <div style = "font-size: 14px">Scroll to latest message:<input type="checkbox" id="scrollDown" name="scrollDown" value="scrollDown"></div>
+                    <br>
                     <b>Don't write anything super sensitive or secretive! Messages are not encrypted! A very smart and very bad person could try to access your chats.</b>
 
                 </div>
@@ -101,8 +107,8 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/build/sha256.min.js"></script>
 
-<script src = "scripts/favicon.js?v=0.1"></script>
-<script src = "scripts/main.js?v=0.1" type = "module"></script>
+<script src = "scripts/favicon.js?v=0.2"></script>
+<script src = "scripts/main.js?v=0.2" type = "module"></script>
 
 
 <div id="loading-overlay" style="
@@ -115,8 +121,8 @@
     align-items: center;
 ">
     <div class="spinner" style="
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #333;
+        border: 4px solid #ffffff;
+        border-top: 4px solid #000000;
         border-radius: 50%;
         width: 30px;
         height: 30px;
