@@ -263,7 +263,6 @@ class Chat{
       this.allowedUsers[sanitizeKey(members[i])] = true;
     }
 
-    console.log(this.allowedUsers)
   }
 }
 
@@ -313,9 +312,6 @@ async function updateSelectDropdown(){
     }
 
     */
-    console.log(auth.currentUser.email); 
-    const token = await auth.currentUser.getIdTokenResult(true); // force refresh
-    console.log(token.claims.email);
 
     
     const allowedChatsRef = child(userDB, sanitizeKey(curUserEmail)+"/allowedChats");
@@ -327,17 +323,21 @@ async function updateSelectDropdown(){
 
     for(const key in allowedChats){
       
-      console.log(allowedChats[key]);
+      try{
+        let singleChat = await get(child(msgDB, allowedChats[key]))
+        let members = singleChat.val().members;
 
-      let singleChat = await get(child(msgDB, allowedChats[key]))
-      let members = singleChat.val().members;
+        let names = []
+        for(let j = 0; j < members.length; j++){
+          names.push(allUsers[sanitizeKey(members[j])]["name"]);
+        }
 
-      let names = []
-      for(let j = 0; j < members.length; j++){
-        names.push(allUsers[sanitizeKey(members[j])]["name"]);
+        selectChat.add(new Option(names.join(", "), allowedChats[key])); 
+
+      }catch{
+        console.log("Chat " + allowedChats[key] + " no longer exists!");
       }
-
-      selectChat.add(new Option(names.join(", "), allowedChats[key])); 
+      
     }
   }
   finally{
