@@ -10,6 +10,8 @@ import {
       onChildAdded,
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence, getIdToken } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyAPFdATsgDJkBZuyV9eXfFX_sxydV6noVM",
@@ -21,9 +23,50 @@ const firebaseConfig = {
   measurementId: "G-56F8MB8QQB"
 };
 
+//database setup
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app, "https://simple-web-chat-b7d54-default-rtdb.firebaseio.com/")
 const userDB = ref(db, "users");
+
+//auth stuff
+const auth = getAuth();
+
+async function authSignUp(email, password) {
+  return createUserWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      // User created successfully
+      console.log("auth signup success")
+      return userCredential.user;
+      
+    })
+    .catch((error) => {
+      console.error(error.code, error.message);
+      throw error;
+    });
+}
+
+async function authLogin(email, password) {
+  return signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+            // Logged in
+            console.log("auth login success")
+      return userCredential.user;
+      
+    })
+    .catch((error) => {
+      console.error(error.code, error.message);
+      throw error;
+    });
+}
+
+async function authLogout() {
+  return signOut(auth).catch((error) => {
+    console.log("auth logout success")
+    console.error(error);
+  });
+}
+
+
 
 //user login stuff
 let loggedIn = false
@@ -39,6 +82,7 @@ class User {
     this.name = name;
     this.email = email;
     this.hashedPass = sha256(pass);
+    this.allowedChats = [];
 
     var currentdate = new Date(); 
     this.timeCreated = 
@@ -110,19 +154,23 @@ async function addAccount(){
   }else{
     //generate passcode
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const length = 5;
+    const numbers = "1234567890"
     let passCodeResult = '';
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < 3; i++) {
       passCodeResult += letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+    for (let i = 0; i < 3; i++) {
+      passCodeResult += numbers.charAt(Math.floor(Math.random() * numbers.length));
     }
 
     let newUser = new User(userName, userEmail, passCodeResult);
     await set(child(userDB, sanitizeKey(userEmail)), newUser);
 
-
     //send the email
     let templateParams = {passcode: passCodeResult, email: userEmail};
     emailjs.send("service_1k01dze","template_g9vnbrg", templateParams, emailjsOptions);
+
+    await authSignUp(userEmail, passCodeResult);
 
     alert("User has been created. Email containing passcode has been sent.");
   }
@@ -149,9 +197,18 @@ async function signIn(){
     if(hashedPass == userData.hashedPass){
       curUserName = userData.name;
       curUserPass = userPass;
-      curUserEmail = userEmail;
+      curUserEmail = userData.email;
       
       loggedIn = true;
+
+      await authLogin(userEmail, userPass);
+      await setPersistence(auth, browserSessionPersistence);
+
+      if (auth.currentUser) {
+        await getIdToken(auth.currentUser, true);
+      }
+
+
       alert("Logged in!");
       refreshLoginView()
       updateSelectDropdown()
@@ -162,6 +219,10 @@ async function signIn(){
     alert("User is not yet registered! Use 'Sign Up' to sign up!")
   }
 }
+
+window.addEventListener("beforeunload", async () => {
+  await auth.signOut();
+});
 
 
 
@@ -196,6 +257,13 @@ class Chat{
     this.members = members
     this.messages = [new Message("text", "New chat created containing users: "+ members.join(", ") + ".", "Client")]
     this.messageLimit = messageLimit
+    this.allowedUsers = {};
+    for(let i = 0; i < members.length; i++){
+      //create permissions
+      this.allowedUsers[sanitizeKey(members[i])] = true;
+    }
+
+    console.log(this.allowedUsers)
   }
 }
 
@@ -216,7 +284,7 @@ async function updateSelectDropdown(){
     while (selectChat.options.length > 1) {
       selectChat.remove(1); // always remove the second option until only one left
     }
-
+    /*
     const msgSnapshot = await get(msgDB);
     const userSnapshot = await get(userDB);
     let allUsers = userSnapshot.val();
@@ -232,8 +300,8 @@ async function updateSelectDropdown(){
     for(let i = 0; i < chats.length; i++){
       let members = chats[i].data.members;
       console.log(members)
-      console.log(members.includes(curUserEmail))
-      console.log(curUserEmail)
+      console.log(chats[i].data.allowedUsers)
+      console.log(chats[i].data.messages)
       if (members.includes(curUserEmail)){
         let names = []
         for(let j = 0; j < members.length; j++){
@@ -243,13 +311,38 @@ async function updateSelectDropdown(){
         selectChat.add(new Option(names.join(", "), chats[i].key)); 
       }
     }
-  }finally{
+
+    */
+    console.log(auth.currentUser.email); 
+    const token = await auth.currentUser.getIdTokenResult(true); // force refresh
+    console.log(token.claims.email);
+
+    
+    const allowedChatsRef = child(userDB, sanitizeKey(curUserEmail)+"/allowedChats");
+    const allowedChatsSnapshot = await get(allowedChatsRef);
+    const allowedChats = allowedChatsSnapshot.val();
+
+    const userSnapshot = await get(userDB);
+    let allUsers = userSnapshot.val();
+
+    for(const key in allowedChats){
+      
+      console.log(allowedChats[key]);
+
+      let singleChat = await get(child(msgDB, allowedChats[key]))
+      let members = singleChat.val().members;
+
+      let names = []
+      for(let j = 0; j < members.length; j++){
+        names.push(allUsers[sanitizeKey(members[j])]["name"]);
+      }
+
+      selectChat.add(new Option(names.join(", "), allowedChats[key])); 
+    }
+  }
+  finally{
     overlay.style.display = 'none';
   }
-
-
-  
-
 }
 
 let messagesList = document.getElementById("messagesList");
@@ -327,8 +420,13 @@ async function createChat(){
   }
 
   let newChat = new Chat(emailList, 150) //1 week or 200 messages
-  alert("Chat has been created!")
   await set(child(msgDB, chatKey), newChat);
+  
+  for(let i = 0; i < emailList.length; i++){
+    const allowedChatsRef = child(userDB, sanitizeKey(emailList[i]) + "/allowedChats");
+    await push(allowedChatsRef, chatKey);
+  }
+  alert("Chat has been created!")
   document.getElementById('listInput').value = curUserEmail;
 }
 
