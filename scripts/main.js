@@ -597,7 +597,7 @@ async function convertAndCompress(file) {
   let compressedFile = await imageCompression(file, options);
 
   // If still larger than 50 KB, iteratively reduce quality
-  let quality = 0.9;
+  let quality = 1;
   while (compressedFile.size > 50 * 1024 && quality > 0.1) {
     options.initialQuality = quality;
     compressedFile = await imageCompression(file, options);
@@ -654,6 +654,7 @@ async function addMessage(){
 
       uploadedImg = null;
       refreshFileUploadStatus();
+
     }
     msgInput.value = "";
   }
