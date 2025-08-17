@@ -44,7 +44,7 @@
                     
                     <a href="registry.html"target="_blank">Registry of Users</a>
                     <br>
-                    <a href="help.html"target="_blank">Help and Info</a>
+                    <a href="help.html"target="_blank">Bug Reports, Suggestions, and Info</a>
                     <br>
                 </div>
                 
@@ -66,7 +66,7 @@
                     <br><br>
                     <b>Or create a new chat:</b>
                     <p>To create a chat, write down the email adresses of each person desired in the chat. Write each email on a new line. <br><br>Each person must have a registered account. You can use the registry (bottom left) to search for registered email addresses. You cannot create chats with invalid email adresses, or chats that already exist. <br><br> When you are done, click the "create chat" button. </p>
-                    <textarea id="listInput" placeholder="Enter emails, one per line", style = "width: calc(100% - 5px); height: 200px; resize: none;"></textarea>
+                    <textarea id="listInput" placeholder="Enter emails, one per line", style = "width: calc(100% - 8px); height: 200px; resize: none; border: 2px solid #000000;"></textarea>
                     <br>
                     <button id = "createChat">Create Chat</button>
                 </div>
@@ -82,14 +82,30 @@
 
                 <div id = "logged-in2">
                     <b id = "chatHeader"> <- Select a chat to start</b>
-                    <textarea readonly id="messagesList" placeholder="", style = "width: calc(100% - 5px); height: 60vh; resize: none;"></textarea>
-                    <br>
-                    <input type="text" id="msgInput" placeholder = "Enter message here...", style = "width: calc(100% - 60px)"></input>
-                    <button id = "sendMessage">Send</button>
+                    <div id="messagesList", style = "overflow-y:auto; border:2px solid #000000; padding:5px; white-space:pre-wrap; font-family:monospace; font-size: 12px; width: calc(100% - 12px); height: 50vh; resize: none;"></div>
+    
+                    <div id = "msgInputDiv", style = "margin-top: 5px; border:2px solid #000000; padding:5px;font-size: 14px; width: calc(100% - 12px); resize: none;">
+                        <input type="text" id="msgInput" placeholder = "Enter message here...", style = "width: calc(100% - 60px)"></input>
+                        
+                        <button id = "sendMessage">Send</button>
+                        <br>
+                        <br>
+                        <div id = "noFileUploaded">
+                            To attach an image, drag and drop, or: <button id="uploadImg">Upload</button><input type="file" id="fileInput" style="display:none" />
+                        </div>
+                        <div id = "fileUploaded">
+                            +Uploaded image
+                            <button id="cancelImg">Cancel Image</button>
+                            <br>
+                        </div>
+                        
+                    </div>
+
+                    
                     <br>
                     <div style = "font-size: 14px">Scroll to latest message:<input type="checkbox" id="scrollDown" name="scrollDown" value="scrollDown"></div>
                     <br>
-                    <b>Don't write anything super sensitive or secretive! Messages are not encrypted! A very smart and very bad person could try to access your chats.</b>
+                    <b>Don't write anything super sensitive or secretive! Messages are not end to end encrypted!</b>
 
                 </div>
                 <div id = "logged-out2">
@@ -105,9 +121,10 @@
         src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
 </script>
 <script src="https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/build/sha256.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
 
-<script src = "scripts/favicon.js?v=0.3"></script>
-<script src = "scripts/main.js?v=0.4" type = "module"></script>
+<script src = "scripts/favicon.js?v=0.5"></script>
+<script src = "scripts/main.js?v=0.5" type = "module"></script>
 
 
 <div id="loading-overlay" style="

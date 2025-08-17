@@ -82,7 +82,7 @@ class User {
     this.name = name;
     this.email = email;
     this.hashedPass = sha256(pass);
-    this.allowedChats = [];
+    this.allowedChats = [{0: "global"}];
 
     var currentdate = new Date(); 
     this.timeCreated = 
@@ -212,6 +212,7 @@ async function signIn(){
       alert("Logged in!");
       refreshLoginView()
       updateSelectDropdown()
+      refreshFileUploadStatus()
     }else{
       alert("Incorrect passcode.");
     }
@@ -221,7 +222,11 @@ async function signIn(){
 }
 
 window.addEventListener("beforeunload", async () => {
-  await auth.signOut();
+  const messageRef = child(msgDB,  curUserChat+"/messages")
+  const newMessageRef = push(messageRef);
+  msgInput.value = ""
+  await set(newMessageRef, new Message("cli", curUserName + " has left the chat.", "Client"));
+  await authLogout();
 });
 
 
@@ -255,14 +260,13 @@ class Message{
 class Chat{
   constructor(members, messageLimit){
     this.members = members
-    this.messages = [new Message("text", "New chat created containing users: "+ members.join(", ") + ".", "Client")]
+    this.messages = [new Message("cli", "New chat created containing users: "+ members.join(", ") + ".", "Client")]
     this.messageLimit = messageLimit
     this.allowedUsers = {};
     for(let i = 0; i < members.length; i++){
       //create permissions
       this.allowedUsers[sanitizeKey(members[i])] = true;
     }
-
   }
 }
 
@@ -324,18 +328,27 @@ async function updateSelectDropdown(){
     for(const key in allowedChats){
       
       try{
-        let singleChat = await get(child(msgDB, allowedChats[key]))
-        let members = singleChat.val().members;
+        if(allowedChats[key] == "global"){
+          selectChat.add(new Option("Global Chat", allowedChats[key])); 
+        }else{
+          let singleChat = await get(child(msgDB, allowedChats[key]))
+          let members = singleChat.val().members;
 
-        let names = []
-        for(let j = 0; j < members.length; j++){
-          names.push(allUsers[sanitizeKey(members[j])]["name"]);
+          let names = []
+          for(let j = 0; j < members.length; j++){
+            names.push(allUsers[sanitizeKey(members[j])]["name"]);
+          }
+          selectChat.add(new Option(names.join(", "), allowedChats[key])); 
+          
+
+          
+
         }
+        
 
-        selectChat.add(new Option(names.join(", "), allowedChats[key])); 
-
-      }catch{
+      }catch(err){
         console.log("Chat " + allowedChats[key] + " no longer exists!");
+        console.error(err);
       }
       
     }
@@ -362,7 +375,7 @@ async function changeCurUserChat(){
     if(curUserChat != null){
       const messageRef = child(msgDB,  curUserChat+"/messages")
       const newMessageRef = push(messageRef);
-      await set(newMessageRef, new Message("text", curUserName + " has left the chat.", "Client"));
+      await set(newMessageRef, new Message("cli", curUserName + " has left the chat.", "Client"));
     }
 
     //change chat
@@ -375,14 +388,12 @@ async function changeCurUserChat(){
     //send new message saying you entered
     const messageRef = child(msgDB,  curUserChat+"/messages")
     const newMessageRef = push(messageRef);
-    await set(newMessageRef, new Message("text", curUserName + " has joined the chat.", "Client"));
+    await set(newMessageRef, new Message("cli", curUserName + " has joined the chat.", "Client"));
 
   }finally{
     overlay.style.display = 'none';
   }
   
-  
-  messagesList.scrollTop = messagesList.scrollHeight;
 }
 
 const createChatButton = document.getElementById("createChat");
@@ -447,27 +458,36 @@ async function updateTextArea(){
 
     Object.values(chatVals.messages).forEach(msg => {
       if(msg.type == "text"){
-        outputString += msg.author + ": " + msg.content + "\n";
+        outputString += "<p>" + msg.author + ": " + msg.content + "</p>"; 
+      }
+      else if(msg.type == "link"){
+        outputString += "<p>" + msg.author + ": " + '<a href = "' + msg.content + '" target="_blank">' + msg.content + "</a></p>";
+      }else if(msg.type == "cli"){
+          outputString += '<p style="color: #FF0000;">' + msg.author + ": " + msg.content + "</p>";
+      }else if(msg.type == "jpeg"){
+        outputString += '<p><img src = "' + msg.content + '"/></p>'; 
       }
     });
 
-    messagesList.value = outputString;
+    messagesList.innerHTML = outputString;
     chatHeader.textContent = curUserChatName;
   }
+  if(scrollDown.checked){messagesList.scrollTop = messagesList.scrollHeight;};
 }
 
 function autoUpdateText() {
   const messagesRef = child(msgDB,  curUserChat+"/messages")
 
   onChildAdded(messagesRef, (snapshot) => {
-    if(scrollDown.checked){messagesList.scrollTop = messagesList.scrollHeight;};
-
     updateTextArea();
+    
+
     if (document.hidden){numNotifs++;};
     setFaviconBadge(numNotifs)
   });
 
 }
+
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
     numNotifs = 0;
@@ -475,30 +495,164 @@ document.addEventListener("visibilitychange", () => {
   } 
 });
 
-
+//SEND MSG STUFF
 
 let sendMessage = document.getElementById("sendMessage");
 sendMessage.addEventListener("click", addMessage)
 let msgInput = document.getElementById("msgInput");
 
+//classifying links
 msgInput.addEventListener('keydown', function(event) {
   if (event.key === 'Enter') {
     addMessage()
   }
 });
 
+function isLink(str) {
+  const urlPattern = /^(https?:\/\/[^\s/$.?#].[^\s]*)$/i;
+  return urlPattern.test(str);
+}
+
+
+//file uploads
+
+let uploadedImg = null;
+
+function refreshFileUploadStatus(){
+  const isFileUploaded = !(uploadedImg == null)
+  document.getElementById('fileUploaded').style.display = isFileUploaded ? 'block' : 'none';
+  document.getElementById('noFileUploaded').style.display = isFileUploaded ? 'none' : 'block';
+}
+
+let msgInputDiv = document.getElementById("msgInputDiv");
+
+msgInputDiv.addEventListener('dragover', (e) => {
+  e.preventDefault(); // allow drop
+  msgInputDiv.style.borderColor = '#ff0000';
+});
+
+msgInputDiv.addEventListener('dragleave', () => {
+  msgInputDiv.style.borderColor = '#000000';
+});
+
+msgInputDiv.addEventListener('drop', (e) => {
+  e.preventDefault();
+  msgInputDiv.style.borderColor = '#000000';
+
+  uploadedImg = e.dataTransfer.files[0]; // take the first file
+  refreshFileUploadStatus()
+  console.log('Dropped file:', uploadedImg.name, uploadedImg.type, uploadedImg.size);
+
+  if (!uploadedImg.type.startsWith('image/')) {
+    alert('Only image files allowed!');
+    uploadedImg = null;
+    refreshFileUploadStatus()
+    return;
+  }
+});
+
+const uploadBtn = document.getElementById('uploadImg');
+const fileInput = document.getElementById('fileInput');
+
+uploadBtn.addEventListener('click', () => {
+  fileInput.click(); // open file selector
+});
+
+fileInput.addEventListener('change', () => {
+  
+
+  uploadedImg = fileInput.files[0]; // get the selected file
+  console.log('Selected file:', uploadedImg.name, uploadedImg.type, uploadedImg.size);
+  refreshFileUploadStatus()
+
+  if(!uploadedImg){
+    uploadedImg = null;
+    refreshFileUploadStatus()
+    return;
+  };
+
+  if (!uploadedImg.type.startsWith('image/')) {
+    alert('Only image files allowed!');
+    uploadedImg = null;
+    refreshFileUploadStatus()
+    return;
+  }
+});
+
+let cancelUploadBtn = document.getElementById("cancelImg");
+
+cancelUploadBtn.addEventListener('click', () => {
+  uploadedImg = null;
+  refreshFileUploadStatus()
+});
+
+async function convertAndCompress(file) {
+  const options = {
+    maxSizeMB: 0.05,            // 50 KB target size
+    maxWidthOrHeight: 1024,     // resize if needed
+    useWebWorker: true,
+    fileType: 'image/jpeg',      // force output type
+  };
+
+  let compressedFile = await imageCompression(file, options);
+
+  // If still larger than 50 KB, iteratively reduce quality
+  let quality = 0.9;
+  while (compressedFile.size > 50 * 1024 && quality > 0.1) {
+    options.initialQuality = quality;
+    compressedFile = await imageCompression(file, options);
+    quality -= 0.1;
+  }
+
+  console.log("Original type:", file.type, "size:", (file.size / 1024).toFixed(2), "KB");
+  console.log("Compressed type:", compressedFile.type, "size:", (compressedFile.size / 1024).toFixed(2), "KB");
+
+  return compressedFile;
+}
+
+
 async function addMessage(){
-  if(msgInput.value != "" && curUserChat != null){
-    let sentMsg = msgInput.value;
-    if(sentMsg.length > 500){
-      alert("You have exceeded the 500 character message limit. Please Shorten.");
-      return;
-    }
+  if((msgInput.value != ""||uploadedImg != null) && curUserChat != null){
+
     const messageRef = child(msgDB,  curUserChat+"/messages")
-    const newMessageRef = push(messageRef);
-    msgInput.value = ""
-    await set(newMessageRef, new Message("text", sentMsg, curUserName));
-    if(scrollDown.checked){messagesList.scrollTop = messagesList.scrollHeight;};
+
+    if(msgInput.value != ""){
+      let sentMsg = msgInput.value;
+      if(sentMsg.length > 500){
+        alert("You have exceeded the 500 character message limit. Please Shorten.");
+        return;
+      }
+      const newMessageRef = push(messageRef);
+
+      let msgType = "text"
+      if(isLink(sentMsg)){
+        msgType = "link"
+      }
+      console.log("msgType: " + msgType);
+
+      await set(newMessageRef, new Message(msgType, sentMsg, curUserName));
+    }
+    if(uploadedImg != null){
+      if(msgInput.value == ""){
+        //send just the name of the author
+        const newMessageRef = push(messageRef);
+        await set(newMessageRef, new Message("text", "", curUserName));
+      }
+
+      uploadedImg = await convertAndCompress(uploadedImg)
+
+      const reader = new FileReader();
+      const base64String = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (err) => reject(err);
+        reader.readAsDataURL(uploadedImg);
+      });
+
+      const newMessageRef = push(messageRef);
+      await set(newMessageRef, new Message("jpeg", base64String, curUserName));
+      
+    }
+    msgInput.value = "";
   }
 }
 
@@ -533,5 +687,3 @@ async function pruneOldMessages() {
 
 }
 setInterval(pruneOldMessages, 10000);
-
-//add security
