@@ -650,7 +650,10 @@ async function addMessage(){
 
       const newMessageRef = push(messageRef);
       await set(newMessageRef, new Message("jpeg", base64String, curUserName));
-      
+
+
+      uploadedImg = null;
+      refreshFileUploadStatus();
     }
     msgInput.value = "";
   }
