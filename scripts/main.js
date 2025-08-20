@@ -222,10 +222,12 @@ async function signIn(){
 }
 
 window.addEventListener("beforeunload", async () => {
-  const messageRef = child(msgDB,  curUserChat+"/messages")
-  const newMessageRef = push(messageRef);
   msgInput.value = ""
-  await set(newMessageRef, new Message("cli", curUserName + " has left the chat.", "Client"));
+  if(curUserChat != null){
+    const messageRef = child(msgDB,  curUserChat+"/messages")
+    const newMessageRef = push(messageRef);
+    await set(newMessageRef, new Message("cli", curUserName + " has left the chat.", "Client"));
+  }
   await authLogout();
 });
 
@@ -288,6 +290,7 @@ async function updateSelectDropdown(){
       selectChat.remove(1); // always remove the second option until only one left
     }
     /*
+    This code is shit
     const msgSnapshot = await get(msgDB);
     const userSnapshot = await get(userDB);
     let allUsers = userSnapshot.val();
@@ -302,9 +305,7 @@ async function updateSelectDropdown(){
     
     for(let i = 0; i < chats.length; i++){
       let members = chats[i].data.members;
-      console.log(members)
-      console.log(chats[i].data.allowedUsers)
-      console.log(chats[i].data.messages)
+      
       if (members.includes(curUserEmail)){
         let names = []
         for(let j = 0; j < members.length; j++){
@@ -316,8 +317,6 @@ async function updateSelectDropdown(){
     }
 
     */
-
-    
     const allowedChatsRef = child(userDB, sanitizeKey(curUserEmail)+"/allowedChats");
     const allowedChatsSnapshot = await get(allowedChatsRef);
     const allowedChats = allowedChatsSnapshot.val();
@@ -338,19 +337,33 @@ async function updateSelectDropdown(){
           for(let j = 0; j < members.length; j++){
             names.push(allUsers[sanitizeKey(members[j])]["name"]);
           }
-          selectChat.add(new Option(names.join(", "), allowedChats[key])); 
           
-
-          
-
+          const lastMsgSeen = singleChat.val().allowedUsers[sanitizeKey(curUserEmail)];
+          let messages = singleChat.val().messages;
+          let lastDBMsg = 0;
+          for (const [key, msg] of Object.entries(messages)) {
+            if(msg.time > lastDBMsg && msg.type != "cli"){
+              lastDBMsg = msg.time;
+            }
+          }
+          console.log(allowedChats[key] + ":");
+          console.log(" User: " + lastMsgSeen)
+          console.log(" DB: " + lastDBMsg)
+          if(lastMsgSeen < lastDBMsg){
+            let newOption = new Option("* " + names.join(", "), allowedChats[key]);
+            newOption.style.color = "#FF0000";
+            selectChat.add(newOption);
+          }else{
+            selectChat.add(new Option(names.join(", "), allowedChats[key])); 
+          }
         }
-        
-
       }catch(err){
         console.log("Chat " + allowedChats[key] + " no longer exists!");
         console.error(err);
       }
-      
+    }
+    if(curUserChat != null){
+      selectChat.value = curUserChat;
     }
   }
   finally{
@@ -381,19 +394,18 @@ async function changeCurUserChat(){
     //change chat
     curUserChat = selectChat.value; 
     curUserChatName = selectChat.options[selectChat.selectedIndex].text;
-    
-    await updateTextArea();
-    autoUpdateText(); //set the path for event listener to be correct
-
+  
     //send new message saying you entered
     const messageRef = child(msgDB,  curUserChat+"/messages")
     const newMessageRef = push(messageRef);
     await set(newMessageRef, new Message("cli", curUserName + " has joined the chat.", "Client"));
-
+    
+    await updateTextArea();
+    autoUpdateText(); //set the path for event listener to be correct
   }finally{
     overlay.style.display = 'none';
   }
-  
+  updateSelectDropdown(); //which will dismiss the notif
 }
 
 const createChatButton = document.getElementById("createChat");
@@ -430,7 +442,7 @@ async function createChat(){
     return;
   }
 
-  let newChat = new Chat(emailList, 150) //1 week or 200 messages
+  let newChat = new Chat(emailList, 80) //80 messagwes
   await set(child(msgDB, chatKey), newChat);
   
   for(let i = 0; i < emailList.length; i++){
@@ -453,8 +465,17 @@ async function updateTextArea(){
   }else{
     let outputString = ""
 
-    const chatRef = await get(child(msgDB,  curUserChat));
-    let chatVals = chatRef.val();
+    const chatRef = child(msgDB,  curUserChat);
+    let chatVals = (await get(chatRef)).val();
+
+    let constLastReadRef;
+    let lastRead;
+    if(curUserChat != "global"){
+      constLastReadRef = child(chatRef, "allowedUsers/" + sanitizeKey(curUserEmail));
+      lastRead = (await get(constLastReadRef)).val();
+    }
+    let newBestTime = false;
+    
 
     Object.values(chatVals.messages).forEach(msg => {
       if(msg.type == "text"){
@@ -467,26 +488,42 @@ async function updateTextArea(){
       }else if(msg.type == "jpeg"){
         outputString += '<p><img src = "' + msg.content + '"/></p>'; 
       }
-    });
 
+      if(curUserChat != "global"){
+        if(msg.type != "cli" && msg.time > lastRead){
+          newBestTime = msg.time;
+        }
+      }
+    });
+    if(newBestTime){
+      await set(constLastReadRef, newBestTime);
+    }
     messagesList.innerHTML = outputString;
     chatHeader.textContent = curUserChatName;
   }
   if(scrollDown.checked){messagesList.scrollTop = messagesList.scrollHeight;};
 }
 
+let currentMessagesUnsub = null; // store unsubscribe fn
 function autoUpdateText() {
-  const messagesRef = child(msgDB,  curUserChat+"/messages")
+  //TS is CHATGPT test if it WORK to not give like 5 notifs at once on update
+  //it seems to work but why does it take like 5 secs to update?
+  if (currentMessagesUnsub) {
+    currentMessagesUnsub();
+    currentMessagesUnsub = null;
+  }
+  const messagesRef = child(msgDB, curUserChat + "/messages");
 
-  onChildAdded(messagesRef, (snapshot) => {
+  currentMessagesUnsub = onChildAdded(messagesRef, (snapshot) => {
     updateTextArea();
-    
 
-    if (document.hidden){numNotifs++;};
-    setFaviconBadge(numNotifs)
+    if (document.hidden) {
+      numNotifs++;
+    }
+    setFaviconBadge(numNotifs);
   });
-
 }
+
 
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
@@ -603,9 +640,6 @@ async function convertAndCompress(file) {
     compressedFile = await imageCompression(file, options);
     quality -= 0.1;
   }
-
-  console.log("Original type:", file.type, "size:", (file.size / 1024).toFixed(2), "KB");
-  console.log("Compressed type:", compressedFile.type, "size:", (compressedFile.size / 1024).toFixed(2), "KB");
 
   return compressedFile;
 }
