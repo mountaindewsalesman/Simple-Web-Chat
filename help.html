@@ -3,15 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SWC Registry</title>
   <link rel="icon" href="favicon.png" type="image/x-icon">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+
+  <title>Bug Reports, Suggestions, and Info!</title>
+  <style>
+        .dark {
+        filter: invert(1) ;
+        background-color: black;
+        }
+
+        /* This applies to ALL <img> elements inside .dark */
+        .dark img {
+        filter: invert(1) ;
+        }
+        .dark a {
+        filter: invert(1) ;
+        }
+    </style>
+
 </head>
 <body style="font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif">
 
-  <h1>Bug Reports, Suggestions, and Info!</h1>
+
+  <h1 style = "margin: 5px;">Bug Reports, Suggestions, and Info!</h1>
+
+  <div >
+    <a href="index.html">Return to Main Page</a><br>
+        Dark Mode:
+      <input type="checkbox" id="darkToggle">
+      <br>
+  </div>
+
+
+
   <h3>Reporting a Bug</h3>
   <p>If you find a bug, which is honestly quite likley, please do the following.</p>
 
@@ -37,10 +64,29 @@
   <p>This is especially important because, as of now, the entire contents of each chat are loaded for every message sent or received. Yes, this is really inefficient, but the contents of the chat are small enough that it hasn't arisen any problems yet, and I'm too lazy to fix it. If a chat has tons and tons of images, you might notice a slightly annoying delay when sending messages, but other than that I think it's fine. This is probably fine because each chat is limited to only 80 messages (after which the oldest messages get deleted), except for the global chat which is limited to 150.</p>
   <p>I really don't claim to have perfect or even good and well optimized code, but what matters to me is that it works, and it's reliable and secure and easy to use. Nothing questionable behind the scenes seems to harm any of these goals.</p>
 
-    <div style=" position: absolute; top: 5px; right: 5px;">
-        <a href="index.html">Return to Main Page</a>
-        <br>
-    </div>
+    
 
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+      const toggle = document.getElementById("darkToggle");
+
+      toggle.addEventListener("change", function() {
+          document.body.classList.toggle("dark", toggle.checked);
+          localStorage.setItem('darkMode', toggle.checked ? 'dark' : 'light');
+
+        });
+      });
+
+      function autoUpdateUImode(){
+        const UImode = localStorage.getItem('darkMode');
+        if(UImode){
+          document.body.classList.toggle("dark", UImode == 'dark');
+          const toggle = document.getElementById("darkToggle");
+          toggle.checked = UImode == 'dark';
+        }
+      }
+      autoUpdateUImode();
+    </script>
 </body>
 </html>

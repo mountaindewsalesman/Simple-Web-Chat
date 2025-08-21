@@ -725,3 +725,24 @@ async function pruneOldMessages() {
 
 }
 setInterval(pruneOldMessages, 10000);
+
+//UI stuff
+document.addEventListener("DOMContentLoaded", function() {
+  const toggle = document.getElementById("darkToggle");
+
+  toggle.addEventListener("change", function() {
+    document.body.classList.toggle("dark", toggle.checked);
+    localStorage.setItem('darkMode', toggle.checked ? 'dark' : 'light');
+
+  });
+});
+
+function autoUpdateUImode(){
+  const UImode = localStorage.getItem('darkMode');
+  if(UImode){
+    document.body.classList.toggle("dark", UImode == 'dark');
+    const toggle = document.getElementById("darkToggle");
+    toggle.checked = UImode == 'dark';
+  }
+}
+autoUpdateUImode();

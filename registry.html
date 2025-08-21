@@ -4,21 +4,60 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SWC Registry</title>
+  <style>
+        .dark {
+        filter: invert(1) ;
+        background-color: black;
+        }
+
+        /* This applies to ALL <img> elements inside .dark */
+        .dark img {
+        filter: invert(1) ;
+        }
+        .dark a {
+        filter: invert(1) ;
+        }
+    </style>
+
   <link rel="icon" href="favicon.png" type="image/x-icon">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 </head>
 <body style="font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif">
-    <h1>SWC Registry - search for users</h1>
+    <h1 style = "margin:5px">SWC Registry - search for users</h1>
+    <div>
+    <a href="index.html">Return to Main Page</a><br>
+        Dark Mode:
+      <input type="checkbox" id="darkToggle">
+      <br>
+  </div>
+  <br>
+
     <input type="text" id="searchInput" placeholder="Search names..." />
     <ul id="results"></ul>
 
-    <div style=" position: absolute; top: 5px; right: 5px;">
-        <a href="index.html">Return to Main Page</a>
-        <br>
-    </div>
-
     <script src = "scripts/registry.js" type = "module"></script>
+     <script>
+      document.addEventListener("DOMContentLoaded", function() {
+      const toggle = document.getElementById("darkToggle");
+
+      toggle.addEventListener("change", function() {
+          document.body.classList.toggle("dark", toggle.checked);
+          localStorage.setItem('darkMode', toggle.checked ? 'dark' : 'light');
+
+        });
+      });
+
+      function autoUpdateUImode(){
+        const UImode = localStorage.getItem('darkMode');
+        if(UImode){
+          document.body.classList.toggle("dark", UImode == 'dark');
+          const toggle = document.getElementById("darkToggle");
+          toggle.checked = UImode == 'dark';
+        }
+      }
+      autoUpdateUImode();
+    </script>
 </body>
 </html>
