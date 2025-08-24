@@ -10,16 +10,23 @@
     <style>
         .dark {
         filter: invert(1) ;
-        background-color: black;
+        background-color: #202020;
         }
 
         /* This applies to ALL <img> elements inside .dark */
-        .dark img {
+        .dark img, .dark iframe {
         filter: invert(1) ;
         }
         .dark a {
         filter: invert(1) ;
+        color: #7ac8ff;
         }
+        .dark input, .dark textarea, .dark select {
+        filter: invert(1) ;
+        background-color: #3a3a3a;
+        color: white;
+        }
+
     </style>
 </head>
 <body style="margin:0; font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif">
@@ -81,7 +88,7 @@
                     <br><br>
                     <b>Or create a new chat:</b>
                     <p>To create a chat, write down the email adresses of each person desired in the chat. Write each email on a new line. <br><br>Each person must have a registered account. You can use the registry (bottom left) to search for registered email addresses. You cannot create chats with invalid email adresses, or chats that already exist. <br><br> When you are done, click the "create chat" button. </p>
-                    <textarea id="listInput" placeholder="Enter emails, one per line", style = "width: calc(100% - 8px); height: 200px; resize: none; border: 2px solid #000000;"></textarea>
+                    <textarea id="listInput" placeholder="Enter emails, one per line", style = "width: calc(100% - 8px); height: 200px; resize: none;"></textarea>
                     <br>
                     <button id = "createChat">Create Chat</button>
                 </div>
@@ -131,6 +138,9 @@
     </table>
 </div>
 
+<iframe src="embeds/chess.html?turn=p1&fen=rn1qkbnr/ppp3pp/3p1p2/4pb2/2B1P1Q1/2N5/PPPP1PPP/R1B1K1NR" width="316" height="320"></iframe>
+
+
 <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
 </script>
@@ -166,6 +176,8 @@
   100% { transform: rotate(360deg); }
 }
 </style>
+
+
 
 
 </body>

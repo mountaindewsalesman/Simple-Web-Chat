@@ -649,6 +649,54 @@ async function addMessage(){
   if((msgInput.value != ""||uploadedImg != null) && curUserChat != null){
 
     const messageRef = child(msgDB,  curUserChat+"/messages")
+    
+    if(msgInput.value.charAt(0) == "/"){
+      const commandList = msgInput.value.slice(1).trim().split(/\s+/);
+      switch(commandList[0]){
+        case "chat":
+
+          switch(commandList[1]){
+            case "clear":
+              if(curUserChat == "global"){
+                alert("You cannot clear the global chat!");
+                break;
+              }
+              if(window.confirm("Are you sure you want to clear all chat messages? This cannot be undone.")){
+                await set(child(msgDB,  curUserChat+"/messages"), [new Message("cli", "Chat has been cleared by " + curUserName + ".", "Client")]);
+                msgInput.value = "";
+                updateTextArea();
+              }
+              break;
+            case "save":
+              let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(messagesList.innerHTML);
+              let dlAnchorElem = document.createElement('a');
+              dlAnchorElem.setAttribute("href",     dataStr     );
+              let fileName = "chat-" + curUserChat + "-" + Date.now() + ".html"
+              dlAnchorElem.setAttribute("download", fileName);
+              dlAnchorElem.click();
+              break;
+            default:
+              alert("Unknown subcommand: " + commandList[1]);
+          }
+
+          break;
+        case "game":
+          switch(commandList[1]){
+            case "chess":
+
+            break;
+          default:
+              alert("Unknown subcommand: " + commandList[1]);
+          }
+
+          break;
+        default:
+          alert("Unknown command: " + commandList[0]);
+      }
+
+      msgInput.value = "";
+      return;
+    }
 
     if(msgInput.value != ""){
       let sentMsg = msgInput.value;
