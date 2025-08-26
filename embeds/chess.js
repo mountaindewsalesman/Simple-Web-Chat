@@ -18,7 +18,7 @@ const board = Chessboard('board1', {
   draggable: true,
   position: 'start',
   pieceTheme: function(piece) {
-    return 'chesspieces/' + piece + '.png';
+    return './chesspieces/' + piece + '.png';
   },
   orientation: (curUser == p1) ? 'white' : 'black',
   onDragStart: onDragStart,
