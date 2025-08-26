@@ -181,14 +181,16 @@ logIn.addEventListener('click', signIn)
 
 async function signIn(){
   let userEmail = prompt("Enter Email Here:");
+
+
+
   userEmail = userEmail.toLowerCase();
   if(!userEmail.includes("@")){
     alert("Please enter a valid email adress!")
     return;
   }
-  let userPass = prompt("Enter Passcode Here:");
 
-  
+  let userPass = prompt("Enter Passcode Here:");  
 
   if(await userExists(userEmail)){
     const snapshot = await get(child(userDB, sanitizeKey(userEmail)));
@@ -346,9 +348,6 @@ async function updateSelectDropdown(){
               lastDBMsg = msg.time;
             }
           }
-          console.log(allowedChats[key] + ":");
-          console.log(" User: " + lastMsgSeen)
-          console.log(" DB: " + lastDBMsg)
           if(lastMsgSeen < lastDBMsg){
             let newOption = new Option("* " + names.join(", "), allowedChats[key]);
             newOption.style.color = "#FF0000";
@@ -459,11 +458,13 @@ let scrollDown = document.getElementById("scrollDown");
 scrollDown.checked = true;
 
 async function updateTextArea(){
+  //console.log("Updating text area...")
+
   if(curUserChat == null){
     messagesList.value = "";
     chatHeader.textContent = "<- Select a chat to start"
   }else{
-    let outputString = ""
+    
 
     const chatRef = child(msgDB,  curUserChat);
     let chatVals = (await get(chatRef)).val();
@@ -475,25 +476,48 @@ async function updateTextArea(){
       lastRead = (await get(constLastReadRef)).val();
     }
     let newBestTime = false;
-    
 
+    // pass 1: find the last message index per chess gameId
+    const lastEmbedMsg = {};
+    let msgIdx = 0;
     Object.values(chatVals.messages).forEach(msg => {
+      if (msg.type === "embed") {
+        lastEmbedMsg[msg.content.gameId] = msgIdx;
+      }
+      msgIdx++;
+    });
+    
+    msgIdx = 0;
+
+    let outputString = "";
+    Object.values(chatVals.messages).forEach(msg => {
+
+      let newStr;
+
       if(msg.type == "text"){
-        outputString += "<p>" + msg.author + ": " + msg.content + "</p>"; 
+        newStr = '<p id = "' + msg.time + '">' + msg.author + ": " + msg.content + "</p>"; 
       }
       else if(msg.type == "link"){
-        outputString += "<p>" + msg.author + ": " + '<a href = "' + msg.content + '" target="_blank">' + msg.content + "</a></p>";
+        newStr = '<p id = "' + msg.time + '">' + msg.author + ": " + '<a href = "' + msg.content + '" target="_blank">' + msg.content + "</a></p>";
       }else if(msg.type == "cli"){
-          outputString += '<p style="color: #FF0000;">' + msg.author + ": " + msg.content + "</p>";
+          newStr = '<p id = "' + msg.time + '" style="color: #FF0000;">' + msg.author + ": " + msg.content + "</p>";
       }else if(msg.type == "jpeg"){
-        outputString += '<p><img src = "' + msg.content + '"/></p>'; 
+        newStr = '<p id = "' + msg.time + '"><img src = "' + msg.content + '"/></p>'; 
+      }else if(msg.type == "embed"){
+        if(msgIdx != lastEmbedMsg[msg.content.gameId]){
+          newStr = '<p id = "' + msg.time + '" style="color: #0000ff;">' + msg.author + ": " + msg.content.type + "With ID: " + msg.content.gameId + "</a></p>";
+        }else{
+          newStr = '<p id = "' + msg.time + '">' + msg.author + ': <br><iframe src="embeds/chess.html?p1=' + msg.content.p1 + '&p2=' + msg.content.p2 + '&turn=' + msg.content.turn + '&gameId=' + msg.content.gameId + '&curUser=' + sanitizeKey(curUserEmail) + '&gameData=' + msg.content.gameData + '" width="316" height="320"></iframe></p>';
+        }
       }
+      outputString += newStr;
 
       if(curUserChat != "global"){
         if(msg.type != "cli" && msg.time > lastRead){
           newBestTime = msg.time;
         }
       }
+      msgIdx++;
     });
     if(newBestTime){
       await set(constLastReadRef, newBestTime);
@@ -659,6 +683,7 @@ async function addMessage(){
             case "clear":
               if(curUserChat == "global"){
                 alert("You cannot clear the global chat!");
+                msgInput.value = "";
                 break;
               }
               if(window.confirm("Are you sure you want to clear all chat messages? This cannot be undone.")){
@@ -681,12 +706,27 @@ async function addMessage(){
 
           break;
         case "game":
+          // /game chess randomemail@gmail.com
+          const curUsers = await get(child(msgDB,  curUserChat+"/members"));
+
+          if(curUserChat == "global"){
+            alert("You cannot start a game in the global chat!");
+          }
+
+          if(!curUsers.val().includes(commandList[2])){
+            alert("invalid email: " + commandList[2] + " is not in this chat!");
+          }
+        
           switch(commandList[1]){
             case "chess":
+              const newMessageRef = push(messageRef);
+              //sender is p2, receiver is p1
+              await set(newMessageRef, new Message("embed", {type: "chess", p2: sanitizeKey(curUserEmail), p1: sanitizeKey(commandList[2]), turn: "p1", gameId: Date.now(), gameData: false}, curUserName));
+              
 
             break;
           default:
-              alert("Unknown subcommand: " + commandList[1]);
+              alert("Invalid game: " + commandList[1]);
           }
 
           break;
@@ -741,6 +781,12 @@ async function addMessage(){
     msgInput.value = "";
   }
 }
+
+window.addEventListener('embedReply', async (event) => {
+  const messageRef = child(msgDB,  curUserChat+"/messages")
+  const newMessageRef = push(messageRef);
+  await set(newMessageRef, new Message("embed", event.detail, curUserName));
+});
 
 async function pruneOldMessages() {
   if(curUserChat != null){

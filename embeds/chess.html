@@ -13,6 +13,27 @@
     
     <div id="board1" style="width: 300px"></div>
 
+    <div id="overlay" style="
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.6);
+      ">
+        <div style="position: absolute;bottom: 10px;left: 10px">
+            <button id = "undoMove">Undo</button>
+            <button id = "sendMove">Send</button>
+        </div>
+        
+    </div>
+
+    <div id="notYourTurn" style="
+    position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.6);">
+        <div style="position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%); font-size: 20px; font-family: monospace; text-align: center;">
+            Other Player's Turn
+        </div>
+      </div>
+
     <script src="chessPieces/chess.min.js"></script>
 
     <script src="chess.js"></script>

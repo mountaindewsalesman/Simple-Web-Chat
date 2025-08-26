@@ -56,7 +56,9 @@
                 
                 <div id = "logged-in">
                     <h2 id = logged-in-as></h2>
-                    <p>Version 1.4
+                    <p>Version 1.6
+                        <br> New in this version: Commands! Chess! Dark Mode! Notifications for new messages that persist across sessions! Bug fixes!
+                        <br> See the help and info page (bottom left) for more info.
                     </p>
                     <p>Refresh page to Log Out</p>
                 </div>
@@ -106,7 +108,7 @@
                     <b id = "chatHeader"> <- Select a chat to start</b>
                     <div id="messagesList", style = "overflow-y:auto; border:2px solid #000000; padding:5px; white-space:pre-wrap; font-family:monospace; font-size: 12px; width: calc(100% - 12px); height: 50vh; resize: none;"></div>
     
-                    <div id = "msgInputDiv", style = "margin-top: 5px; border:2px solid #000000; padding:5px;font-size: 14px; width: calc(100% - 12px); resize: none;">
+                    <div id = "msgInputDiv", style = "position: relative; margin-top: 5px; border:2px solid #000000; padding:5px;font-size: 14px; width: calc(100% - 12px); resize: none;">
                         <input type="text" id="msgInput" placeholder = "Enter message here...", style = "width: calc(100% - 60px)"></input>
                         
                         <button id = "sendMessage">Send</button>
@@ -123,6 +125,14 @@
 
                         <br>
                         <div style = "font-size: 14px">Scroll to latest message:<input type="checkbox" id="scrollDown" name="scrollDown" value="scrollDown"></div>
+
+                        <div style = "position: absolute;  bottom: -5px; right: 10px;">
+                            <p>Current Commands: 
+                                <br> /chat [clear, save]
+                                <br> /game [chess, (more coming soon!)] [email of other player]
+                                <br> Example: "/game chess mountaindewsalesman@gmail.com"
+                            </p>
+                        </div>
                     </div>
                     
                     <br>
@@ -138,7 +148,6 @@
     </table>
 </div>
 
-<iframe src="embeds/chess.html?turn=p1&fen=rn1qkbnr/ppp3pp/3p1p2/4pb2/2B1P1Q1/2N5/PPPP1PPP/R1B1K1NR" width="316" height="320"></iframe>
 
 
 <script type="text/javascript"
@@ -147,8 +156,8 @@
 <script src="https://cdn.jsdelivr.net/npm/js-sha256@0.9.0/build/sha256.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
 
-<script src = "scripts/favicon.js?v=0.52"></script>
-<script src = "scripts/main.js?v=0.52" type = "module"></script>
+<script src = "scripts/favicon.js?v=0.6"></script>
+<script src = "scripts/main.js?v=0.6" type = "module"></script>
 
 
 <div id="loading-overlay" style="
