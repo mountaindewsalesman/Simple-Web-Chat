@@ -14,11 +14,12 @@ const turnOverlay = document.getElementById('notYourTurn');
 const undoBotton = document.getElementById('undoMove');
 const sendButton = document.getElementById('sendMove');
 
+const pieceBase = new URL('./chessPieces/', import.meta.url).href;
 const board = Chessboard('board1', {
   draggable: true,
   position: 'start',
   pieceTheme: function(piece) {
-    return 'chesspieces/' + piece + '.png';
+    return pieceBase + piece + '.png';
   },
   orientation: (curUser == p1) ? 'white' : 'black',
   onDragStart: onDragStart,
