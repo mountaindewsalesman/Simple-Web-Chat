@@ -8,11 +8,13 @@ const gameId = urlParams.get('gameId');
 const curUser = urlParams.get('curUser');
 const gameData = urlParams.get('gameData');
 
+const endOverlay = document.getElementById('end');
 
 const overlay = document.getElementById('overlay');
 const turnOverlay = document.getElementById('notYourTurn');
 const undoBotton = document.getElementById('undoMove');
 const sendButton = document.getElementById('sendMove');
+const choosePromote = document.getElementById('choosePromote');
 
 const pieceBase = new URL('./chessPieces/', import.meta.url).href;
 const board = Chessboard('board1', {
@@ -28,28 +30,47 @@ const board = Chessboard('board1', {
 });
 
 const fen = gameData
-console.log("FEN from URL: " + fen)
 if (fen != "false" && fen != null){ 
     chess = new Chess(fen);
-    console.log("Loaded FEN: " + fen);
 }else{
-    console.log("No FEN found, starting new game")
     chess = new Chess();
 }
 board.position(chess.fen());
-//console.log(chess.fen())
 
 overlay.style.display = 'none';
-notYourTurn.style.display = (curUser == ((turn === 'p1') ? p1 : p2)) ? 'none' : 'block';
+turnOverlay.style.display = (curUser == ((turn === 'p1') ? p1 : p2)) ? 'none' : 'block';
+choosePromote.style.display = 'none';
+
+if (chess.game_over()){
+    endOverlay.style.display = 'block';
+    if (chess.in_checkmate()) {
+    // If it's checkmate, the side to move LOST
+    const winner = (chess.turn() === 'w') ? 'Black' : 'White';
+    console.log(winner)
+    document.getElementById("result").textContent = "Winner: " + winner;
+  }
+  else if (chess.in_draw()) {
+    document.getElementById("result").textContent = "Draw";
+  }
+  else if (chess.in_stalemate()) {
+    document.getElementById("result").textContent = "Draw by stalemate";
+  }
+  else if (chess.in_threefold_repetition()) {
+    document.getElementById("result").textContent = "Draw by threefold repetition";
+  }
+  else if (chess.insufficient_material()) {
+    document.getElementById("result").textContent = "Draw by insufficient material";
+  }
+
+}else{
+    endOverlay.style.display = 'none';
+}
 
 
 
 function onDragStart(source, piece, position, orientation) {
     if (chess.game_over()) return false;
 
-    /* console.log((turn === 'p1') ? p1 : p2)
-    console.log(curUser)
-    console.log(chess.turn()) */
 
     //if the current user is the player whose turn it is
     if (curUser == ((turn === 'p1') ? p1 : p2)){
@@ -64,12 +85,41 @@ function onDragStart(source, piece, position, orientation) {
     }
 }
 
-//STILL BROKEN IMA SLEEP ON IT
+function waitForPromotionChoice() {
+  return new Promise(resolve => {
+    ["q", "r", "b", "n"].forEach(id => {
+      const btn = document.getElementById(id);
+      btn.addEventListener("click", () => resolve(id), { once: true });
+    });
+  });
+}
 
-function onDrop(source, target) {
-  const move = chess.move({ from: source, to: target, promotion: 'q' });
+async function onDrop(source, target) {
+  const piece = chess.get(source);
+  if (piece && piece.type === "p" &&
+     ((piece.color === "w" && target[1] === "8") ||
+      (piece.color === "b" && target[1] === "1"))) {
+
+    // Show promotion overlay
+    choosePromote.style.display = "block";
+
+    // Wait for player to pick piece
+    const choice = await waitForPromotionChoice();
+
+    // Hide overlay
+    choosePromote.style.display = "none";
+
+    // Try the move with chosen promotion
+    const move = chess.move({ from: source, to: target, promotion: choice });
+    if (move === null) return 'snapback';
+
+    overlay.style.display = 'block';
+    board.position(chess.fen());
+    return;
+  }
+
+  const move = chess.move({ from: source, to: target});
   if (move === null) return 'snapback';
-  console.log("moved piece: " + chess.fen())
   overlay.style.display = 'block';
 }
 

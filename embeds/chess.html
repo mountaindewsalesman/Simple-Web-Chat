@@ -20,26 +20,53 @@
     <div id="overlay" style="
       position: absolute;
       inset: 0;
-      background: rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.3);
       ">
-        <div style="position: absolute;bottom: 10px;left: 10px">
-            <button id = "undoMove">Undo</button>
-            <button id = "sendMove">Send</button>
-        </div>
+      <div style="width: 100%; background-color: rgba(0,0,255,0.3); padding: 10px; display: flex; align-items: center;">
+        <button id="undoMove">Undo</button>
+        <button id="sendMove">Send</button>
+      </div>
+    </div>
+
+    <div id="choosePromote" style="
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.3);
+      ">
+      
+      <div style="width: 100%; background-color: rgba(0,0,255,0.3); padding: 10px; display: flex; align-items: center;">
+        <p style="color: white">Promote to: </p>
+        
+        <button id="q">Queen</button>
+        <button id="r">Rook</button>
+        <button id="b">Bishop</button>
+        <button id="n">Knight</button>
+      </div>
+        
         
     </div>
 
     <div id="notYourTurn" style="
     position: absolute;
       inset: 0;
-      background: rgba(255,255,255,0.6);">
+      background: rgba(255,255,255,0.3);">
         <div style="position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%); font-size: 20px; font-family: monospace; text-align: center;">
-            Other Player's Turn
-        </div>
+          Other Player's Turn
       </div>
+    </div>
+
+    <div id="end" style="
+    position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.9);">
+      <div id = result style="position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%); font-size: 20px; font-family: monospace; text-align: center;">
+      </div>
+    </div>
+
+
 
     <script src="chessPieces/chess.min.js"></script>
 
-    <script src="chess.js?v=0.1" type="module"></script>
+    <script src="chess.js?v=0.2" type="module"></script>
 </body>
 </html>

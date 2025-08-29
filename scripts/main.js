@@ -505,11 +505,11 @@ async function updateTextArea(){
         newStr = '<p id = "' + msg.time + '"><img src = "' + msg.content + '"/></p>'; 
       }else if(msg.type == "embed"){
         if(msg.content.p1 != sanitizeKey(curUserEmail) && msg.content.p2 != sanitizeKey(curUserEmail)){
-          newStr = '<p id = "' + msg.time + '" style="color: #0000ff;">' + msg.author + ": " + msg.content.type + " (You are not in this game!)" + "</a></p>";
+          newStr = '<p id = "' + msg.time + '" style="color: #0000ff;">' + msg.author + ": " + msg.content.type.toUpperCase() + " (You are not in this game!)" + "</a></p>";
         }else if (msgIdx != lastEmbedMsg[msg.content.gameId]){
-          newStr = '<p id = "' + msg.time + '" style="color: #0000ff;">' + msg.author + ": " + msg.content.type + " with ID: " + msg.content.gameId + "</a></p>";
+          newStr = '<p id = "' + msg.time + '" style="color: #0000ff;">' + msg.author + ": " + msg.content.type.toUpperCase() + " with ID: " + msg.content.gameId + "</a></p>";
         }else{
-          newStr = '<p id = "' + msg.time + '">' + msg.author + ': <br><iframe src="embeds/chess.html?p1=' + msg.content.p1 + '&p2=' + msg.content.p2 + '&turn=' + msg.content.turn + '&gameId=' + msg.content.gameId + '&curUser=' + sanitizeKey(curUserEmail) + '&gameData=' + msg.content.gameData + '&?v=0.1' + '" width="316" height="320"></iframe></p>';
+          newStr = '<p id = "' + msg.time + '">' + msg.author + ': <br><iframe src="embeds/chess.html?p1=' + msg.content.p1 + '&p2=' + msg.content.p2 + '&turn=' + msg.content.turn + '&gameId=' + msg.content.gameId + '&curUser=' + sanitizeKey(curUserEmail) + '&gameData=' + msg.content.gameData + '&?v=0.1' + '" width="316" height="316"></iframe></p>';
         }
       }
       outputString += newStr;
