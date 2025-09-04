@@ -56,8 +56,8 @@
                 
                 <div id = "logged-in">
                     <h2 id = logged-in-as></h2>
-                    <p>Version 1.6
-                        <br> New in this version: Commands! Chess! Dark Mode! Notifications for new messages that persist across sessions! Bug fixes!
+                    <p>Version 1.61
+                        <br> New in this version: Added option to show timestamps on messages. Fixed a bug related to scrolling to latest message. 
                         <br> See the help and info page (bottom left) for more info.
                     </p>
                     <p>Refresh page to Log Out</p>
@@ -124,6 +124,7 @@
                         </div>
 
                         <br>
+                        <div style = "font-size: 14px">Show message timestamps:<input type="checkbox" id="timeStamp" name="timeStamp" value="timeStamp"></div>
                         <div style = "font-size: 14px">Scroll to latest message:<input type="checkbox" id="scrollDown" name="scrollDown" value="scrollDown"></div>
 
                         <div style = "position: absolute;  bottom: -5px; right: 10px;">
@@ -156,7 +157,7 @@
 <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
 
 <script src = "scripts/favicon.js?v=0.61"></script>
-<script src = "scripts/main.js?v=0.62" type = "module"></script>
+<script src = "scripts/main.js?v=0.63" type = "module"></script>
 
 
 <div id="loading-overlay" style="

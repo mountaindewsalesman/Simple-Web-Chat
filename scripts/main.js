@@ -457,6 +457,20 @@ async function createChat(){
 let scrollDown = document.getElementById("scrollDown");
 scrollDown.checked = true;
 
+scrollDown.addEventListener('change', () => {
+  if(scrollDown.checked){
+    messagesList.scrollTop = messagesList.scrollHeight;
+  }
+});
+
+let timeStamp = document.getElementById("timeStamp");
+timeStamp.checked = true;
+
+timeStamp.addEventListener('change', () => {
+  updateTextArea();
+});
+
+
 async function updateTextArea(){
   //console.log("Updating text area...")
 
@@ -494,24 +508,34 @@ async function updateTextArea(){
 
       let newStr;
 
+      let formattedDate = "";
+      if(timeStamp.checked){
+        let date = new Date(msg.time);
+        let options = { month: "short", day: "numeric", hour: "numeric", minute: "numeric", hour12: true };
+        formattedDate = date.toLocaleString("en-US", options);
+        formattedDate = "<span style='color: #808080; font-size: 0.8em;'>[" + formattedDate + "] </span> ";
+      }
+
+
       if(msg.type == "text"){
-        newStr = '<p id = "' + msg.time + '">' + msg.author + ": " + msg.content + "</p>"; 
+        newStr = '<p id = "' + msg.time + '">' + formattedDate + msg.author + ": " + msg.content + "</p>"; 
       }
       else if(msg.type == "link"){
-        newStr = '<p id = "' + msg.time + '">' + msg.author + ": " + '<a href = "' + msg.content + '" target="_blank">' + msg.content + "</a></p>";
+        newStr = '<p id = "' + msg.time + '">' + formattedDate + msg.author + ": " + '<a href = "' + msg.content + '" target="_blank">' + msg.content + "</a></p>";
       }else if(msg.type == "cli"){
-          newStr = '<p id = "' + msg.time + '" style="color: #FF0000;">' + msg.author + ": " + msg.content + "</p>";
+          newStr = '<p id = "' + msg.time + '" style="color: #FF0000;">' + formattedDate + msg.author + ": " + msg.content + "</p>";
       }else if(msg.type == "jpeg"){
-        newStr = '<p id = "' + msg.time + '"><img src = "' + msg.content + '"/></p>'; 
+        newStr = '<p id = "' + msg.time + '">' + formattedDate + '<img src = "' + msg.content + '"/></p>'; 
       }else if(msg.type == "embed"){
         if(msg.content.p1 != sanitizeKey(curUserEmail) && msg.content.p2 != sanitizeKey(curUserEmail)){
-          newStr = '<p id = "' + msg.time + '" style="color: #0000ff;">' + msg.author + ": " + msg.content.type.toUpperCase() + " (You are not in this game!)" + "</a></p>";
+          newStr = '<p id = "' + msg.time + '" style="color: #0000ff;">' + formattedDate + msg.author + ": " + msg.content.type.toUpperCase() + " (You are not in this game!)" + "</a></p>";
         }else if (msgIdx != lastEmbedMsg[msg.content.gameId]){
-          newStr = '<p id = "' + msg.time + '" style="color: #0000ff;">' + msg.author + ": " + msg.content.type.toUpperCase() + " with ID: " + msg.content.gameId + "</a></p>";
+          newStr = '<p id = "' + msg.time + '" style="color: #0000ff;">' + formattedDate + msg.author + ": " + msg.content.type.toUpperCase() + " with ID: " + msg.content.gameId + "</a></p>";
         }else{
-          newStr = '<p id = "' + msg.time + '">' + msg.author + ': <br><iframe src="embeds/chess.html?p1=' + msg.content.p1 + '&p2=' + msg.content.p2 + '&turn=' + msg.content.turn + '&gameId=' + msg.content.gameId + '&curUser=' + sanitizeKey(curUserEmail) + '&gameData=' + msg.content.gameData + '&?v=0.1' + '" width="316" height="316"></iframe></p>';
+          newStr = '<p id = "' + msg.time + '">' + formattedDate + msg.author + ': <br><iframe src="embeds/chess.html?p1=' + msg.content.p1 + '&p2=' + msg.content.p2 + '&turn=' + msg.content.turn + '&gameId=' + msg.content.gameId + '&curUser=' + sanitizeKey(curUserEmail) + '&gameData=' + msg.content.gameData + '&?v=0.1' + '" width="316" height="316"></iframe></p>';
         }
       }
+      console.log(newStr)
       outputString += newStr;
 
       if(curUserChat != "global"){
