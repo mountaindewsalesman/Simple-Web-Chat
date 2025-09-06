@@ -46,24 +46,28 @@
 
 
   <h3>Reporting a Bug</h3>
-  <p>If you find a bug, which is honestly quite likley, please do the following.</p>
+  <p>If you find a bug, please do the following.</p>
 
   <p>  
     1. Right click the page and click "inspect". A new page will open up. <br>
     2. Click "Console". Doing so will reveal all errors from the code. <br>
-    3. Send me a screenshot of the console errors, as well as a detailed report of what the bug is and what is required to reproduce it. </p>
+    3. Send me a screenshot of the console errors, as well as a detailed report of what the bug is and what is required to reproduce it.
+    4. If there are no errors, or the console is blank, you don't have to send me anything.  </p>
+
   <p>Please reach me through the following email: <br>simplewebchat.swc@gmail.com</p>
 
   <h3>Sending a suggestion</h3>
   <p>Suggestions should be sent to the same email: <br>simplewebchat.swc@gmail.com</p>
 
-  <p>I will try to reply to (and maybe, if the idea is good) impliment these within a few days. I'd really like to polish this project and it's UI. If you have an idea that will overhaul a huge amount of code or only very minorly convenience the user, I will probably not impliment it. </p>
+  <p>I will try to reply to (and maybe, if the idea is good) impliment these. If you have an idea that will overhaul a huge amount of code and only very minorly convenience the user, I will probably not impliment it. </p>
 
   <h3>Technical Information</h3>
 
-  On the off chance you care or are curious about the inner workings of this project, read here. 
-  <p>All of the backend data for this project is stored on a firebase realtime database. I did this because 1. it's free to start and 2. I didn't feel like writing an entire backend. All of the data, besides passcodes, is stored unencrypted on this database. There are read and write permission systems in place based on firebase auth.</p>
-  <p>more coming soon</p>
+  <p>All of the backend data for this project is stored on a firebase realtime database. I did this because 1. it's free to start and 2. I didn't feel like writing an entire backend. All of the data, besides passcodes, is stored unencrypted on this database. There are read and write permission systems in place based on firebase auth, so not anybody can read or write to chats the don't belong to.</p>
+  <p>Emails with passcodes are sent through another free service called EmailJS. EmailJS, however, stores the emails that it sends, so this log is deleted constantly to ensure passwords are not leaked.</p>
+  <p>Text messages, links, etc function just by uploading the text to the Firebase Database. When you send an image, the image is converted to a JPEG, downscaled and compressed until it's under 10kb, and then encoded with base64 into a text format. It is then sent the same way a text message would be. Doing it this way means I didn't need to add any infrascructure to support images. </p>
+  <p>Chess and other embeddable games work very similarly. The game state of the chessboard is stored as text and then sent over as if it is a text message, along with some other data. </p>
+  <p>One of the major shortcomings of this project so far is that every time a new message is sent or received, the client requests the entire chat and then refreshes the entire chat. Since chats are limited to about 100 messages, and no message or image can exceed 10kb, there is no significant lag or server strain, but if an entire chat is filled with images, it begins to feel a bit laggy. I don't want to fix this issue because it will probably be a pain to fix. </p>
 
 
     <script>

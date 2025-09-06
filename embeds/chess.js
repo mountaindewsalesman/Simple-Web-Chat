@@ -42,8 +42,9 @@ turnOverlay.style.display = (curUser == ((turn === 'p1') ? p1 : p2)) ? 'none' : 
 choosePromote.style.display = 'none';
 
 if (chess.game_over()){
-    endOverlay.style.display = 'block';
-    if (chess.in_checkmate()) {
+  turnOverlay.style.display = 'none';
+  endOverlay.style.display = 'block';
+  if (chess.in_checkmate()) {
     // If it's checkmate, the side to move LOST
     const winner = (chess.turn() === 'w') ? 'Black' : 'White';
     console.log(winner)
