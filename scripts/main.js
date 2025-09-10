@@ -279,96 +279,81 @@ const selectChat = document.getElementById("selectChat");
 let refreshChatList = document.getElementById("refreshChatList");
 refreshChatList.addEventListener('click', updateSelectDropdown);
 
-//make this a button called refresh. 
 
+//ts is chatgpt idk if it works
 async function updateSelectDropdown(){
   const overlay = document.getElementById('loading-overlay');
-
-  try{
+  try {
     overlay.style.display = 'flex';
-
-
     while (selectChat.options.length > 1) {
-      selectChat.remove(1); // always remove the second option until only one left
-    }
-    /*
-    This code is shit
-    const msgSnapshot = await get(msgDB);
-    const userSnapshot = await get(userDB);
-    let allUsers = userSnapshot.val();
-
-    const chats = [];
-    msgSnapshot.forEach(childSnap => {
-      chats.push ({
-        key: childSnap.key, 
-        data: childSnap.val()
-      })
-    })
-    
-    for(let i = 0; i < chats.length; i++){
-      let members = chats[i].data.members;
-      
-      if (members.includes(curUserEmail)){
-        let names = []
-        for(let j = 0; j < members.length; j++){
-          names.push(allUsers[sanitizeKey(members[j])]["name"]);
-        }
-        
-        selectChat.add(new Option(names.join(", "), chats[i].key)); 
-      }
+      selectChat.remove(1);
     }
 
-    */
-    const allowedChatsRef = child(userDB, sanitizeKey(curUserEmail)+"/allowedChats");
-    const allowedChatsSnapshot = await get(allowedChatsRef);
-    const allowedChats = allowedChatsSnapshot.val();
+    // Get allowed chats and all users in parallel
+    const [allowedChatsSnapshot, userSnapshot] = await Promise.all([
+      get(child(userDB, sanitizeKey(curUserEmail) + "/allowedChats")),
+      get(userDB)
+    ]);
 
-    const userSnapshot = await get(userDB);
-    let allUsers = userSnapshot.val();
+    const allowedChats = allowedChatsSnapshot.val() || {};
+    const allUsers = userSnapshot.val() || {};
 
-    for(const key in allowedChats){
-      
-      try{
-        if(allowedChats[key] == "global"){
-          selectChat.add(new Option("Global Chat", allowedChats[key])); 
-        }else{
-          let singleChat = await get(child(msgDB, allowedChats[key]))
-          let members = singleChat.val().members;
+    // Build an array of promises for all chat fetches
+    const chatKeys = Object.values(allowedChats).filter(k => k !== "global");
+    const chatPromises = chatKeys.map(chatKey =>
+      get(child(msgDB, chatKey)).then(snap => ({ chatKey, snap }))
+    );
 
-          let names = []
-          for(let j = 0; j < members.length; j++){
-            names.push(allUsers[sanitizeKey(members[j])]["name"]);
-          }
-          
-          const lastMsgSeen = singleChat.val().allowedUsers[sanitizeKey(curUserEmail)];
-          let messages = singleChat.val().messages;
+    // Wait for all chat data at once
+    const chatSnapshots = await Promise.all(chatPromises);
+
+    // Now populate select
+    for (const key in allowedChats) {
+      try {
+        if (allowedChats[key] === "global") {
+          selectChat.add(new Option("Global Chat", allowedChats[key]));
+        } else {
+          // Find the matching snapshot we already fetched
+          const chatObj = chatSnapshots.find(c => c.chatKey === allowedChats[key]);
+          if (!chatObj || !chatObj.snap.exists()) continue;
+
+          const singleChat = chatObj.snap.val();
+          const members = singleChat.members || [];
+          const names = members.map(m => allUsers[sanitizeKey(m)]?.name || "Unknown");
+
+          const lastMsgSeen = singleChat.allowedUsers?.[sanitizeKey(curUserEmail)] ?? 0;
+          const messages = singleChat.messages || {};
+
           let lastDBMsg = 0;
-          for (const [key, msg] of Object.entries(messages)) {
-            if(msg.time > lastDBMsg && msg.type != "cli"){
+          for (const msg of Object.values(messages)) {
+            if (msg.time > lastDBMsg && msg.type !== "cli") {
               lastDBMsg = msg.time;
             }
           }
-          if(lastMsgSeen < lastDBMsg){
+
+          if (lastMsgSeen < lastDBMsg) {
             let newOption = new Option("* " + names.join(", "), allowedChats[key]);
             newOption.style.color = "#FF0000";
             selectChat.add(newOption);
-          }else{
-            selectChat.add(new Option(names.join(", "), allowedChats[key])); 
+          } else {
+            selectChat.add(new Option(names.join(", "), allowedChats[key]));
           }
         }
-      }catch(err){
+      } catch (err) {
         console.log("Chat " + allowedChats[key] + " no longer exists!");
         console.error(err);
       }
     }
-    if(curUserChat != null){
+
+    if (curUserChat != null) {
       selectChat.value = curUserChat;
     }
   }
-  finally{
+  finally {
     overlay.style.display = 'none';
   }
 }
+
 
 let messagesList = document.getElementById("messagesList");
 let chatHeader = document.getElementById("chatHeader");
