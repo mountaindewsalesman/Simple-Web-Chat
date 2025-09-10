@@ -435,6 +435,7 @@ async function createChat(){
   }
   alert("Chat has been created!")
   document.getElementById('listInput').value = curUserEmail;
+  updateSelectDropdown();
 }
 
 //messages code
