@@ -279,8 +279,70 @@ const selectChat = document.getElementById("selectChat");
 let refreshChatList = document.getElementById("refreshChatList");
 refreshChatList.addEventListener('click', updateSelectDropdown);
 
+//make this a button called refresh. 
 
-//ts is chatgpt idk if it works
+async function updateSelectDropdown(){
+  const overlay = document.getElementById('loading-overlay');
+
+  try{
+    overlay.style.display = 'flex';
+
+
+    while (selectChat.options.length > 1) {
+      selectChat.remove(1); // always remove the second option until only one left
+    }
+
+    const allowedChatsRef = child(userDB, sanitizeKey(curUserEmail)+"/allowedChats");
+    const allowedChatsSnapshot = await get(allowedChatsRef);
+    const allowedChats = allowedChatsSnapshot.val();
+
+    const userSnapshot = await get(userDB);
+    let allUsers = userSnapshot.val();
+
+    for(const key in allowedChats){
+      
+      try{
+        if(allowedChats[key] == "global"){
+          selectChat.add(new Option("Global Chat", allowedChats[key])); 
+        }else{
+          let singleChat = await get(child(msgDB, allowedChats[key]))
+          let members = singleChat.val().members;
+
+          let names = []
+          for(let j = 0; j < members.length; j++){
+            names.push(allUsers[sanitizeKey(members[j])]["name"]);
+          }
+          
+          const lastMsgSeen = singleChat.val().allowedUsers[sanitizeKey(curUserEmail)];
+          let messages = singleChat.val().messages;
+          let lastDBMsg = 0;
+          for (const [key, msg] of Object.entries(messages)) {
+            if(msg.time > lastDBMsg && msg.type != "cli"){
+              lastDBMsg = msg.time;
+            }
+          }
+          if(lastMsgSeen < lastDBMsg){
+            let newOption = new Option("* " + names.join(", "), allowedChats[key]);
+            newOption.style.color = "#FF0000";
+            selectChat.add(newOption);
+          }else{
+            selectChat.add(new Option(names.join(", "), allowedChats[key])); 
+          }
+        }
+      }catch(err){
+        console.log("Chat " + allowedChats[key] + " no longer exists!");
+        console.error(err);
+      }
+    }
+    if(curUserChat != null){
+      selectChat.value = curUserChat;
+    }
+  }
+  finally{
+    overlay.style.display = 'none';
+  }
+}
+/* Broken but more efficient chatgpt
 async function updateSelectDropdown(){
   const overlay = document.getElementById('loading-overlay');
   try {
@@ -353,7 +415,7 @@ async function updateSelectDropdown(){
     overlay.style.display = 'none';
   }
 }
-
+  */
 
 let messagesList = document.getElementById("messagesList");
 let chatHeader = document.getElementById("chatHeader");
@@ -435,7 +497,6 @@ async function createChat(){
   }
   alert("Chat has been created!")
   document.getElementById('listInput').value = curUserEmail;
-  updateSelectDropdown();
 }
 
 //messages code
